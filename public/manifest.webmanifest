@@ -1,0 +1,11 @@
+{
+  "name": "Multiple Finance",
+  "short_name": "Multiple",
+  "description": "Finanças compartilhadas com clareza.",
+  "lang": "pt-BR",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F5F6F3",
+  "theme_color": "#1F5B54"
+}
