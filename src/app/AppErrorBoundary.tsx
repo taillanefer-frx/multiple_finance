@@ -25,7 +25,7 @@ export class AppErrorBoundary extends Component<Props, State> {
       return (
         <main className="grid min-h-screen place-items-center bg-canvas p-5">
           <div className="w-full max-w-md">
-            <ErrorState onRetry={() => this.setState({ hasError: false })} />
+            <ErrorState title="A tela encontrou um estado inesperado" description="Você pode tentar novamente sem recarregar o navegador. Se mudar de tela, este estado será descartado." onRetry={() => this.setState({ hasError: false })} />
           </div>
         </main>
       )
