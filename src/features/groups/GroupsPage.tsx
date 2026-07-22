@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronRight, Landmark, Plus, UsersRound } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
@@ -6,6 +6,7 @@ import { DemoBadge } from '../../components/ui/DemoBadge'
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/StateDisplay'
 import { Surface } from '../../components/ui/Surface'
 import { currency } from '../../lib/utils/format'
+import { dataErrorMessage } from '../../lib/supabase/errors'
 import { useAuth } from '../auth/AuthContext'
 import { CreateGroupModal } from './CreateGroupModal'
 import { demoGroups } from './demoGroups'
@@ -25,36 +26,55 @@ const demoSummaries: GroupSummary[] = demoGroups.map((group, index) => ({
 }))
 
 export default function GroupsPage() {
-  const { configured, user } = useAuth()
+  const { configured, loading: authLoading, user } = useAuth()
+  const userId = user?.id ?? null
+  const requestId = useRef(0)
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [groups, setGroups] = useState<GroupSummary[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [refreshWarning, setRefreshWarning] = useState<string | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
 
   const loadGroups = useCallback(async (silent = false) => {
+    const currentRequest = ++requestId.current
     if (!silent) setLoading(true)
-    setError(false)
+    setError(null)
+    if (!silent) setRefreshWarning(null)
+    if (authLoading) return
 
     if (!configured) {
       setGroups(demoSummaries)
       setLoading(false)
       return
     }
-    if (!user) return
+    if (!userId) {
+      setGroups([])
+      setLoading(false)
+      return
+    }
 
     try {
-      setGroups(await getGroupsForUser(user.id))
-    } catch {
-      setError(true)
+      const nextGroups = await getGroupsForUser(userId)
+      if (currentRequest === requestId.current) {
+        setGroups(nextGroups)
+        setRefreshWarning(null)
+      }
+    } catch (caughtError) {
+      if (currentRequest === requestId.current) {
+        const message = dataErrorMessage(caughtError, 'Não foi possível sincronizar seus grupos privados.')
+        if (silent) setRefreshWarning('A atualização automática falhou, mas sua lista anterior foi mantida.')
+        else setError(message)
+      }
     } finally {
-      setLoading(false)
+      if (currentRequest === requestId.current) setLoading(false)
     }
-  }, [configured, user])
+  }, [authLoading, configured, userId])
 
   useEffect(() => {
     void loadGroups()
+    return () => { requestId.current += 1 }
   }, [loadGroups])
 
   useEffect(() => {
@@ -64,15 +84,16 @@ export default function GroupsPage() {
   }, [searchParams, setSearchParams])
 
   useEffect(() => {
-    if (!configured || !user) return
-    return subscribeToGroupList(user.id, () => { void loadGroups(true) })
-  }, [configured, loadGroups, user])
+    if (!configured || authLoading || !userId) return
+    return subscribeToGroupList(userId, () => { void loadGroups(true) })
+  }, [authLoading, configured, loadGroups, userId])
 
   if (loading) return <LoadingState label="Buscando seus grupos privados…" />
-  if (error) return <ErrorState title="Não foi possível carregar seus grupos" description="Verifique sua conexão e tente novamente." onRetry={() => void loadGroups()} />
+  if (error) return <ErrorState title="Não foi possível carregar seus grupos" description={error} onRetry={() => void loadGroups()} />
 
   return (
     <div className="space-y-6">
+      {refreshWarning && <p className="rounded-2xl bg-amber/10 px-4 py-3 text-xs leading-5 text-amber">{refreshWarning}</p>}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div><h2 className="text-xl font-semibold tracking-tight text-ink">Organize com quem importa</h2><p className="mt-1 text-sm text-muted">Você vê apenas os grupos em que participa.</p></div>
         <div className="flex items-center gap-2">{!configured && <DemoBadge />}<Button onClick={() => setCreateOpen(true)}><Plus size={17} /> Novo grupo</Button></div>

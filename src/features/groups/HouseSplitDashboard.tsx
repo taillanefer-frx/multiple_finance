@@ -7,6 +7,7 @@ import { DemoBadge } from '../../components/ui/DemoBadge'
 import { EmptyState } from '../../components/ui/StateDisplay'
 import { Modal } from '../../components/ui/Modal'
 import { Surface } from '../../components/ui/Surface'
+import { UserAvatar } from '../../components/ui/UserAvatar'
 import { currency } from '../../lib/utils/format'
 import { ExpenseDetailSheet } from './ExpenseDetailSheet'
 import { GroupAdminPanel } from './GroupAdminPanel'
@@ -15,6 +16,7 @@ import type { GroupDetails, GroupExpenseSummary } from './types'
 
 const monthNames = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
 const statusLabels: Record<GroupDetails['monthStatus'], string> = { empty: 'Sem despesas', in_progress: 'Em andamento', attention: 'Requer atenção', paid: 'Tudo pago' }
+const categoryChartColors = ['bg-petrol', 'bg-positive', 'bg-amber', 'bg-danger', 'bg-muted']
 
 function formatDate(value: string | null) {
   if (!value) return 'Sem data'
@@ -65,12 +67,12 @@ export function HouseSplitDashboard({ group, userId, configured, onMonthChange, 
         {group.currentUserRole === 'admin' && <button type="button" onClick={() => setAdminOpen((value) => !value)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-muted shadow-card" aria-label="Configurações do grupo"><Settings2 size={18} /></button>}
       </header>
 
-      <section className="rounded-3xl bg-petrol p-6 text-white shadow-lift sm:p-7">
-        <div className="flex items-start justify-between gap-4"><div><p className="text-sm font-medium text-white/70">Minha parte este mês</p><p className="mt-2 text-4xl font-semibold tracking-tight">{currency.format(group.myValue)}</p></div><span className="grid h-11 w-11 place-items-center rounded-2xl bg-white/10"><WalletCards size={20} /></span></div>
-        <div className="mt-7 grid grid-cols-2 gap-4 border-t border-white/10 pt-5 sm:grid-cols-3">
-          <div><p className="text-xs text-white/55">Já pago</p><p className="mt-1 font-semibold">{currency.format(group.myPaidValue)}</p></div>
-          <div><p className="text-xs text-white/55">Pendente</p><p className="mt-1 font-semibold">{currency.format(group.myPendingValue)}</p></div>
-          <div className="col-span-2 sm:col-span-1"><p className="text-xs text-white/55">Próximo vencimento</p><p className="mt-1 font-semibold">{group.nextDue ? formatDate(group.nextDue.dueDate) : 'Nenhum'}</p></div>
+      <section className="rounded-3xl bg-petrol p-5 text-white shadow-lift sm:p-6">
+        <div className="flex items-start justify-between gap-4"><div><p className="text-sm font-medium text-white/70">Minha parte este mês</p><p className="mt-1.5 text-3xl font-semibold tracking-tight">{currency.format(group.myValue)}</p></div><span className="grid h-10 w-10 place-items-center rounded-2xl bg-white/10"><WalletCards size={19} /></span></div>
+        <div className="mt-5 grid grid-cols-3 gap-2 border-t border-white/10 pt-4">
+          <div><p className="text-[11px] text-white/55">Já pago</p><p className="mt-1 text-sm font-semibold">{currency.format(group.myPaidValue)}</p></div>
+          <div><p className="text-[11px] text-white/55">Pendente</p><p className="mt-1 text-sm font-semibold">{currency.format(group.myPendingValue)}</p></div>
+          <div><p className="text-[11px] text-white/55">Próximo</p><p className="mt-1 text-sm font-semibold">{group.nextDue ? formatDate(group.nextDue.dueDate) : 'Nenhum'}</p></div>
         </div>
       </section>
 
@@ -79,23 +81,24 @@ export function HouseSplitDashboard({ group, userId, configured, onMonthChange, 
       {isEmpty ? <EmptyState icon={PackageOpen} title="Nenhuma despesa adicionada neste mês." description="As despesas confirmadas e a divisão entre participantes aparecerão aqui." actionLabel="Adicionar primeira despesa" onAction={openAdd} /> : (
         <>
           <div className="grid grid-cols-2 gap-3">
-            <Surface className="p-5"><span className="grid h-9 w-9 place-items-center rounded-2xl bg-sage text-petrol"><ReceiptText size={17} /></span><p className="mt-4 text-xs text-muted">Total do grupo</p><p className="mt-1 text-xl font-semibold tracking-tight text-ink">{currency.format(group.monthTotal)}</p><p className="mt-2 text-xs text-muted">{group.confirmedExpenseCount} {group.confirmedExpenseCount === 1 ? 'despesa' : 'despesas'}</p></Surface>
-            <Surface className="p-5"><span className="grid h-9 w-9 place-items-center rounded-2xl bg-amber/10 text-amber"><ListChecks size={17} /></span><p className="mt-4 text-xs text-muted">Status do mês</p><p className="mt-1 text-base font-semibold text-ink">{statusLabels[group.monthStatus]}</p><p className="mt-2 text-xs text-muted">{currency.format(group.pendingGroupValue)} pendente</p></Surface>
+            <Surface className="flex items-center gap-3 p-4"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-sage text-petrol"><ReceiptText size={17} /></span><div className="min-w-0"><p className="text-[11px] text-muted">Total do grupo</p><p className="mt-0.5 truncate text-lg font-semibold tracking-tight text-ink">{currency.format(group.monthTotal)}</p><p className="text-[10px] text-muted">{group.confirmedExpenseCount} {group.confirmedExpenseCount === 1 ? 'despesa' : 'despesas'}</p></div></Surface>
+            <Surface className="flex items-center gap-3 p-4"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-amber/10 text-amber"><ListChecks size={17} /></span><div className="min-w-0"><p className="text-[11px] text-muted">Status do mês</p><p className="mt-0.5 truncate text-sm font-semibold text-ink">{statusLabels[group.monthStatus]}</p><p className="text-[10px] text-muted">{currency.format(group.pendingGroupValue)} pendente</p></div></Surface>
           </div>
 
           <Surface className="overflow-hidden">
-            <div className="flex items-center justify-between border-b border-line p-5"><div><p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted">Participantes</p><h3 className="mt-1 font-semibold text-ink">Partes do mês</h3></div><UsersRound size={19} className="text-muted" /></div>
-            <div className="divide-y divide-line">{group.members.map((member) => <div key={member.membershipId} className="flex items-center gap-3 p-4 sm:px-5"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sage text-xs font-semibold text-petrol">{member.displayName.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase()}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-ink">{member.isCurrentUser ? 'Eu' : member.displayName}</p><p className="mt-0.5 text-xs text-muted">{member.pendingValue > 0 ? `${currency.format(member.pendingValue)} pendente` : member.value > 0 ? 'Pago' : 'Sem participação'}</p></div><p className="text-sm font-semibold text-ink">{currency.format(member.value)}</p></div>)}</div>
+            <div className="flex items-center justify-between border-b border-line px-4 py-3.5 sm:px-5"><div><p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted">Participantes</p><h3 className="mt-0.5 text-sm font-semibold text-ink">Partes do mês</h3></div><UsersRound size={18} className="text-muted" /></div>
+            <div className="divide-y divide-line">{group.members.map((member) => <div key={member.membershipId} className="flex items-center gap-3 px-4 py-3 sm:px-5"><UserAvatar displayName={member.displayName} avatarPath={member.avatarUrl} className="h-9 w-9 text-[11px]" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-ink">{member.isCurrentUser ? 'Eu' : member.displayName}</p><p className="mt-0.5 text-[11px] text-muted">{member.pendingValue > 0 ? `${currency.format(member.pendingValue)} pendente` : member.value > 0 ? 'Pago' : 'Sem participação'}</p></div><p className="text-sm font-semibold text-ink">{currency.format(member.value)}</p></div>)}</div>
           </Surface>
 
           <Surface className="overflow-hidden">
-            <div className="flex items-center justify-between border-b border-line p-5"><div><p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted">Próximos vencimentos</p><h3 className="mt-1 font-semibold text-ink">O que vem pela frente</h3></div><Clock3 size={19} className="text-muted" /></div>
-            {group.upcomingExpenses.length === 0 ? <p className="p-5 text-sm text-muted">Nenhuma despesa pendente com vencimento informado.</p> : <ExpenseList expenses={group.upcomingExpenses} onSelect={setSelectedExpense} dueDate />}
+            <div className="flex items-center justify-between border-b border-line px-4 py-3.5 sm:px-5"><div><p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted">Próximos vencimentos</p><h3 className="mt-0.5 text-sm font-semibold text-ink">O que vem pela frente</h3></div><Clock3 size={18} className="text-muted" /></div>
+            {group.upcomingExpenses.length === 0 ? <p className="px-4 py-3 text-xs text-muted sm:px-5">Nenhuma despesa pendente com vencimento informado.</p> : <ExpenseList expenses={group.upcomingExpenses} onSelect={setSelectedExpense} dueDate />}
           </Surface>
 
-          <Surface className="p-5">
+          <Surface className="p-4 sm:p-5">
             <div className="flex items-center justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted">Resumo por categoria</p><h3 className="mt-1 font-semibold text-ink">Onde o grupo gastou</h3></div><ShoppingBasket size={19} className="text-muted" /></div>
-            <div className="mt-5 space-y-4">{group.categories.map((category) => <div key={category.key}><div className="flex items-center justify-between gap-4 text-sm"><span className="font-medium text-ink">{category.label}</span><span className="font-semibold text-ink">{currency.format(category.amount)}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-sage"><div className="h-full rounded-full bg-petrol" style={{ width: `${group.monthTotal ? Math.max(5, category.amount / group.monthTotal * 100) : 0}%` }} /></div></div>)}</div>
+            <div className="mt-4 divide-y divide-line">{group.categories.map((category) => { const percentage = group.monthTotal ? category.amount / group.monthTotal * 100 : 0; return <div key={category.key} className="flex items-center justify-between gap-4 py-2.5 text-sm"><span className="font-medium text-ink">{category.label}</span><span className="text-right"><span className="block font-semibold text-ink">{currency.format(category.amount)}</span><span className="text-[10px] text-muted">{percentage.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% do total</span></span></div> })}</div>
+            <div className="mt-4 border-t border-line pt-4"><div className="flex h-2 overflow-hidden rounded-full bg-canvas">{group.categories.map((category, index) => <span key={category.key} className={categoryChartColors[index % categoryChartColors.length]} style={{ width: `${group.monthTotal ? category.amount / group.monthTotal * 100 : 0}%` }} title={`${category.label}: ${currency.format(category.amount)}`} />)}</div><p className="mt-2 text-[10px] text-muted">Distribuição compacta das categorias confirmadas</p></div>
           </Surface>
 
           {reviews.length > 0 && <section className="rounded-3xl border border-amber/20 bg-amber/5 p-5"><div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-white text-amber"><Clock3 size={17} /></span><div><p className="text-sm font-semibold text-ink">{reviews.length} {reviews.length === 1 ? 'despesa em revisão' : 'despesas em revisão'}</p><p className="mt-1 text-xs leading-5 text-muted">{currency.format(group.reviewValue)} ainda não entra no total confirmado.</p></div></div><div className="mt-3"><ExpenseList expenses={reviews} onSelect={setSelectedExpense} /></div></section>}

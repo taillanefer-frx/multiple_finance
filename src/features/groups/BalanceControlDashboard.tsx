@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, ArrowDownLeft, ArrowLeft, ArrowUpRight, CalendarDays, ChevronRight, CircleDollarSign, CreditCard, History, Landmark, ListChecks, PackageOpen, ReceiptText, Settings2, SlidersHorizontal, UserRound, UsersRound, WalletCards } from 'lucide-react'
+import { AlertTriangle, ArrowDownLeft, ArrowLeft, ArrowUpRight, CalendarDays, ChevronRight, CircleDollarSign, CreditCard, History, Landmark, ListChecks, PackageOpen, ReceiptText, Settings2, SlidersHorizontal, UsersRound, WalletCards } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { CollapsibleSection } from '../../components/ui/CollapsibleSection'
@@ -7,6 +7,7 @@ import { DemoBadge } from '../../components/ui/DemoBadge'
 import { EmptyState } from '../../components/ui/StateDisplay'
 import { Modal } from '../../components/ui/Modal'
 import { Surface } from '../../components/ui/Surface'
+import { UserAvatar } from '../../components/ui/UserAvatar'
 import { currency } from '../../lib/utils/format'
 import { BalanceDetailSheet, type BalanceDetailTarget } from './BalanceDetailSheet'
 import { GroupAdminPanel } from './GroupAdminPanel'
@@ -117,7 +118,7 @@ export function BalanceControlDashboard({ group, userId, configured, onMonthChan
         </section>
       )}
 
-      <Surface className="overflow-hidden"><div className="flex items-center justify-between border-b border-line p-5"><div><p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted">Saldo dos participantes</p><h3 className="mt-1 font-semibold text-ink">Visão do grupo</h3></div><UsersRound size={19} className="text-muted" /></div><div className="divide-y divide-line">{balance.participants.map((participant) => <div key={participant.userId} className="flex items-center gap-3 p-4 sm:px-5"><span className="grid h-10 w-10 place-items-center rounded-full bg-sage text-xs font-semibold text-petrol"><UserRound size={17} /></span><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-ink">{participant.isCurrentUser ? 'Eu' : participant.displayName}</p><p className="mt-0.5 text-xs text-muted">{participant.configured ? 'Saldo atualizado' : 'Ainda não definiu o saldo'}</p></div><p className="text-sm font-semibold text-ink">{participant.configured ? currency.format(participant.currentBalance) : '—'}</p></div>)}</div></Surface>
+      <Surface className="overflow-hidden"><div className="flex items-center justify-between border-b border-line p-5"><div><p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted">Saldo dos participantes</p><h3 className="mt-1 font-semibold text-ink">Visão do grupo</h3></div><UsersRound size={19} className="text-muted" /></div><div className="divide-y divide-line">{balance.participants.map((participant) => <div key={participant.userId} className="flex items-center gap-3 p-4 sm:px-5"><UserAvatar displayName={participant.displayName} avatarPath={participant.avatarUrl} className="h-10 w-10 text-xs" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-ink">{participant.isCurrentUser ? 'Eu' : participant.displayName}</p><p className="mt-0.5 text-xs text-muted">{participant.configured ? 'Saldo atualizado' : 'Ainda não definiu o saldo'}</p></div><p className="text-sm font-semibold text-ink">{participant.configured ? currency.format(participant.currentBalance) : '—'}</p></div>)}</div></Surface>
 
       {balance.configured && noMovements && <EmptyState icon={PackageOpen} title="Nenhuma entrada ou despesa registrada neste mês." description="Seu saldo inicial já está definido. Novas movimentações aparecerão aqui em tempo real." />}
 
