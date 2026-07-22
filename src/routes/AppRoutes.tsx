@@ -6,6 +6,7 @@ import DashboardPage from '../features/dashboard/DashboardPage'
 import GroupDetailPage from '../features/groups/GroupDetailPage'
 import GroupsPage from '../features/groups/GroupsPage'
 import InvitePage from '../features/groups/InvitePage'
+import GoalsPage from '../features/goals/GoalsPage'
 import NotificationsPage from '../features/notifications/NotificationsPage'
 import ProfilePage from '../features/profile/ProfilePage'
 import NotFoundPage from './NotFoundPage'
@@ -20,6 +21,7 @@ export function AppRoutes() {
         <Route index element={<DashboardPage />} />
         <Route path="grupos" element={<GroupsPage />} />
         <Route path="grupos/:groupId" element={<GroupDetailPage />} />
+        <Route path="metas" element={<GoalsPage />} />
         <Route path="notificacoes" element={<NotificationsPage />} />
         <Route path="perfil" element={<ProfilePage />} />
       </Route>
