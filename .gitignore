@@ -1,0 +1,30 @@
+node_modules/
+dist/
+coverage/
+
+# Variáveis locais e segredos
+.env
+.env.*
+!.env.example
+*.local
+
+# Arquivos gerados e temporários
+*.log*
+*.tsbuildinfo
+*.zip
+*.tar
+*.tar.gz
+outputs/
+work/
+supabase/.temp/
+.supabase/
+
+# Metadados locais das ferramentas
+.agents/
+.codex/
+.vscode/
+.idea/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
