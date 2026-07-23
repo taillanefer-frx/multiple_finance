@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Bell, Home, Plus, Target, UserRound, UsersRound } from 'lucide-react'
+import { Bell, Home, Moon, Plus, Sun, Target, UserRound, UsersRound } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { cn } from '../../lib/utils/cn'
 import { BrandMark } from '../ui/BrandMark'
@@ -30,7 +30,7 @@ function getPageTitle(pathname: string, firstName: string) {
 export function AppShell() {
   const { pathname } = useLocation()
   const { user } = useAuth()
-  const { profile } = useProfile()
+  const { colorMode, profile, saveColorMode } = useProfile()
   const { openAddFlow } = useAddFlow()
   const displayName = String(profile?.displayName || user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Usuário')
   const firstName = displayName.trim().split(/\s+/)[0] || 'Olá'
@@ -47,7 +47,18 @@ export function AppShell() {
               <h1 className="truncate text-lg font-semibold tracking-tight text-ink">{page.title}</h1>
             </div>
           </div>
-          <NavLink to="/app/perfil" aria-label={`Abrir perfil de ${displayName}`}><UserAvatar displayName={displayName} avatarPath={profile?.avatarPath} className="h-10 w-10 text-sm" /></NavLink>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => saveColorMode(colorMode === 'dark' ? 'light' : 'dark')}
+              aria-label={colorMode === 'dark' ? 'Ativar modo claro' : 'Ativar modo escuro'}
+              title={colorMode === 'dark' ? 'Modo claro' : 'Modo escuro'}
+              className="grid h-10 w-10 place-items-center rounded-full border border-line bg-surface text-muted shadow-card transition hover:text-ink"
+            >
+              {colorMode === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <NavLink to="/app/perfil" aria-label={`Abrir perfil de ${displayName}`}><UserAvatar displayName={displayName} avatarPath={profile?.avatarPath} className="h-10 w-10 text-sm" /></NavLink>
+          </div>
         </div>
       </header>
 
@@ -56,7 +67,7 @@ export function AppShell() {
       </main>
 
       <nav aria-label="Navegação principal" className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <div className="mx-auto grid max-w-2xl grid-cols-6 items-end rounded-[1.4rem] border border-line/90 bg-white/95 px-1.5 py-2 shadow-lift backdrop-blur-xl sm:px-2">
+        <div className="mx-auto grid max-w-2xl grid-cols-6 items-end rounded-[1.4rem] border border-line/90 bg-surface/95 px-1.5 py-2 shadow-lift backdrop-blur-xl sm:px-2">
           {navigation.map(({ label, icon: Icon, ...item }) => {
             if ('action' in item) {
               return (
