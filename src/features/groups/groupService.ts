@@ -1,5 +1,7 @@
 import { supabase } from '../../lib/supabase/client'
 import { DataRequestError } from '../../lib/supabase/errors'
+import { summarizeReactions } from '../reactions/reactionService'
+import type { ReactionEmoji } from '../reactions/types'
 import type { BalanceControlSummary, BalanceInstallmentSummary, BalanceMovementSummary, ExpenseCategorySummary, ExpenseParticipantSummary, GroupDetails, GroupExpenseSummary, GroupMemberSummary, GroupSummary, GroupType, InvitePreview } from './types'
 
 interface MembershipRow {
@@ -28,6 +30,13 @@ function client() {
 function currentMonth() {
   const now = new Date()
   return { month: now.getMonth() + 1, year: now.getFullYear() }
+}
+
+function nextUnpaidInstallment(total: number, paid: Set<number>) {
+  for (let number = 1; number <= total; number += 1) {
+    if (!paid.has(number)) return number
+  }
+  return total
 }
 
 function throwIfError(error: { message: string; code?: string } | null) {
@@ -324,9 +333,7 @@ export async function getGroupDetails(
     group.type === 'balance_control'
       ? db.from('balance_movements').select('id, user_id, type, amount, description, movement_date, notes, related_expense_id, created_at').eq('group_id', groupId).eq('monthly_period_id', period.id).order('movement_date', { ascending: false })
       : Promise.resolve({ data: [], error: null }),
-    group.type === 'balance_control'
-      ? db.from('installments').select('id, title, total_amount, installment_amount, total_installments, current_installment, due_day, card_label, paid_by_user_id, active, first_due_date, notes').eq('group_id', groupId).eq('active', true).order('created_at', { ascending: false })
-      : Promise.resolve({ data: [], error: null }),
+    db.from('installments').select('id, title, total_amount, installment_amount, total_installments, current_installment, due_day, card_label, paid_by_user_id, active, first_due_date, notes').eq('group_id', groupId).order('created_at', { ascending: false }),
   ])
   throwIfError(expenseResult.error)
   throwIfError(balanceResult.error)
@@ -335,16 +342,46 @@ export async function getGroupDetails(
 
   const expenses = expenseResult.data ?? []
   const expenseIds = expenses.map((expense) => expense.id as string)
-  const [participantResult, receiptResult] = expenseIds.length
-    ? await Promise.all([
-        db.from('expense_participants').select('expense_id, user_id, share_amount, share_percent, included').in('expense_id', expenseIds),
-        db.from('receipts').select('id, expense_id, storage_path, original_filename, status').in('expense_id', expenseIds),
-      ])
-    : [{ data: [], error: null }, { data: [], error: null }]
+  const installmentIds = (installmentResult.data ?? []).map((installment) => installment.id as string)
+  const reactionTargetIds = [...new Set([...expenseIds, ...installmentIds])]
+  const [participantResult, receiptResult, paymentResult, reactionResult] = await Promise.all([
+    expenseIds.length
+      ? db.from('expense_participants').select('expense_id, user_id, share_amount, share_percent, included').in('expense_id', expenseIds)
+      : Promise.resolve({ data: [], error: null }),
+    expenseIds.length
+      ? db.from('receipts').select('id, expense_id, storage_path, original_filename, status').in('expense_id', expenseIds)
+      : Promise.resolve({ data: [], error: null }),
+    installmentIds.length
+      ? db.from('installment_payments').select('installment_id, installment_number').in('installment_id', installmentIds)
+      : Promise.resolve({ data: [], error: null }),
+    reactionTargetIds.length
+      ? db.from('group_transaction_reactions').select('target_kind, target_id, user_id, emoji').in('target_id', reactionTargetIds)
+      : Promise.resolve({ data: [], error: null }),
+  ])
   throwIfError(participantResult.error)
   throwIfError(receiptResult.error)
+  throwIfError(paymentResult.error)
+  throwIfError(reactionResult.error)
 
   const displayNameByUser = new Map(members.map((member) => [member.user_id, member.profiles?.display_name || 'Membro']))
+  const reactionsByTarget = summarizeReactions(
+    (reactionResult.data ?? []).map((reaction) => ({
+      target_kind: reaction.target_kind as 'expense' | 'installment',
+      target_id: reaction.target_id as string,
+      user_id: reaction.user_id as string,
+      emoji: reaction.emoji as ReactionEmoji,
+    })),
+    userId,
+    displayNameByUser,
+  )
+  const paidNumbersByInstallment = new Map<string, Set<number>>()
+  for (const payment of paymentResult.data ?? []) {
+    const installmentId = payment.installment_id as string
+    const numbers = paidNumbersByInstallment.get(installmentId) ?? new Set<number>()
+    numbers.add(Number(payment.installment_number))
+    paidNumbersByInstallment.set(installmentId, numbers)
+  }
+  const installmentById = new Map((installmentResult.data ?? []).map((installment) => [installment.id as string, installment]))
   const participantsByExpense = new Map<string, ExpenseParticipantSummary[]>()
   for (const participant of participantResult.data ?? []) {
     const expenseId = participant.expense_id as string
@@ -365,7 +402,15 @@ export async function getGroupDetails(
     status: receipt.status as string,
   }]))
 
-  const expenseSummaries: GroupExpenseSummary[] = expenses.map((expense) => ({
+  const expenseSummaries: GroupExpenseSummary[] = expenses.map((expense) => {
+    const installmentId = (expense.installment_id as string | null) ?? null
+    const installment = installmentId ? installmentById.get(installmentId) : null
+    const firstDueDate = installment?.first_due_date ? new Date(`${String(installment.first_due_date)}T12:00:00`) : null
+    const periodInstallment = firstDueDate
+      ? Math.max(1, Math.min(Number(installment?.total_installments ?? 1), 1 + (year - firstDueDate.getFullYear()) * 12 + (month - (firstDueDate.getMonth() + 1))))
+      : Number(installment?.current_installment ?? 1)
+    const paidInstallments = installmentId ? (paidNumbersByInstallment.get(installmentId)?.size ?? 0) : 0
+    return {
     id: expense.id as string,
     title: expense.title as string,
     amount: Number(expense.amount),
@@ -375,12 +420,19 @@ export async function getGroupDetails(
     dueDate: (expense.due_date as string | null) ?? null,
     status: expense.status as GroupExpenseSummary['status'],
     paidByUserId: (expense.paid_by_user_id as string | null) ?? null,
-    installmentId: (expense.installment_id as string | null) ?? null,
+    installmentId,
     paidBy: displayNameByUser.get(expense.paid_by_user_id as string) || 'Não informado',
     notes: (expense.notes as string | null) ?? null,
     participants: participantsByExpense.get(expense.id as string) ?? [],
     receipt: receiptByExpense.get(expense.id as string) ?? null,
-  }))
+    installment: installment ? {
+      totalInstallments: Number(installment.total_installments),
+      currentInstallment: periodInstallment,
+      paidInstallments,
+      remainingInstallments: Math.max(Number(installment.total_installments) - paidInstallments, 0),
+    } : null,
+    reactions: reactionsByTarget.get(`expense:${String(expense.id)}`) ?? [],
+  }})
 
   const confirmedExpenses = expenseSummaries.filter((expense) => expense.status !== 'cancelled' && expense.status !== 'review')
   const reviewExpenses = expenseSummaries.filter((expense) => expense.status === 'review')
@@ -447,9 +499,9 @@ export async function getGroupDetails(
   }))
   const balanceInstallments: BalanceInstallmentSummary[] = (installmentResult.data ?? []).map((installment) => {
     const firstDueDate = (installment.first_due_date as string | null) ?? null
-    const firstDue = firstDueDate ? new Date(`${firstDueDate}T12:00:00`) : null
-    const elapsedMonths = firstDue ? (year - firstDue.getFullYear()) * 12 + (month - (firstDue.getMonth() + 1)) : 0
-    const currentInstallment = firstDue ? elapsedMonths + 1 : Number(installment.current_installment)
+    const paidNumbers = paidNumbersByInstallment.get(installment.id as string) ?? new Set<number>()
+    const paidInstallments = paidNumbers.size
+    const currentInstallment = nextUnpaidInstallment(Number(installment.total_installments), paidNumbers)
     return {
       id: installment.id as string,
       title: installment.title as string,
@@ -457,7 +509,7 @@ export async function getGroupDetails(
       installmentAmount: Number(installment.installment_amount),
       totalInstallments: Number(installment.total_installments),
       currentInstallment,
-      remainingInstallments: Math.max(Number(installment.total_installments) - currentInstallment, 0),
+      remainingInstallments: Math.max(Number(installment.total_installments) - paidInstallments, 0),
       dueDay: Number(installment.due_day),
       nextDueDate: periodDate(year, month, Number(installment.due_day)),
       firstDueDate,
@@ -466,8 +518,10 @@ export async function getGroupDetails(
       paidByUserId: (installment.paid_by_user_id as string | null) ?? null,
       responsibleName: displayNameById.get(installment.paid_by_user_id as string) || 'Não informado',
       active: Boolean(installment.active),
+      paidInstallments,
+      reactions: reactionsByTarget.get(`installment:${String(installment.id)}`) ?? [],
     }
-  }).filter((installment) => installment.currentInstallment > 0 && installment.currentInstallment <= installment.totalInstallments)
+  }).filter((installment) => installment.currentInstallment > 0 && installment.currentInstallment <= installment.totalInstallments && installment.active)
   const monthTotal = group.type === 'balance_control'
     ? [...expenseByUser.values()].reduce((total, amount) => total + amount, 0)
     : confirmedExpenses.reduce((total, expense) => total + expense.amount, 0)
@@ -614,9 +668,19 @@ export async function approveExpense(expenseId: string) {
 }
 
 export async function markExpensePaid(expenseId: string) {
-  const { data, error } = await client().rpc('mark_group_expense_paid', { p_expense_id: expenseId })
+  const { data, error } = await client().rpc('mark_group_expense_paid_v2', { p_expense_id: expenseId })
   throwIfError(error)
   if (!data) throw new Error('Não foi possível marcar a despesa como paga.')
+  const result = data as { milestone?: 'one_remaining' | 'completed' | null }
+  return { milestone: result.milestone ?? null }
+}
+
+export async function markInstallmentPaid(installmentId: string) {
+  const { data, error } = await client().rpc('mark_installment_paid', { p_installment_id: installmentId })
+  throwIfError(error)
+  if (!data) throw new Error('Não foi possível registrar o pagamento da parcela.')
+  const result = data as { milestone?: 'one_remaining' | 'completed' | null }
+  return { milestone: result.milestone ?? null }
 }
 
 export async function cancelExpense(expenseId: string) {
