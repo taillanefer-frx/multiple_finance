@@ -21,5 +21,12 @@ export function dataErrorMessage(error: unknown, fallback: string) {
   if (message.includes('fetch') || message.includes('network') || message.includes('failed to fetch')) {
     return 'A conexão oscilou durante a consulta. Tente novamente.'
   }
+  if (
+    code?.startsWith('PGRST')
+    || message.includes('schema cache')
+    || message.includes('could not find the function')
+  ) {
+    return 'Esta ação ainda não foi atualizada no Supabase. Aplique a migration mais recente e tente novamente.'
+  }
   return fallback
 }
