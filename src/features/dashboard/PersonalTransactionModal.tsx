@@ -58,8 +58,8 @@ export function PersonalTransactionModal({ open, onClose, defaultMonth, defaultT
     <Modal open={open} onClose={onClose} title={transaction ? 'Editar movimentação' : 'Nova movimentação'} description="O lançamento fica privado e visível somente na sua conta.">
       <form className="space-y-4" onSubmit={submit}>
         <div className="grid grid-cols-2 gap-2 rounded-2xl bg-canvas p-1">
-          <button type="button" onClick={() => changeType('income')} className={`rounded-xl px-3 py-2.5 text-sm font-semibold ${type === 'income' ? 'bg-white text-positive shadow-card' : 'text-muted'}`}>Entrada</button>
-          <button type="button" onClick={() => changeType('expense')} className={`rounded-xl px-3 py-2.5 text-sm font-semibold ${type === 'expense' ? 'bg-white text-danger shadow-card' : 'text-muted'}`}>Saída</button>
+          <button type="button" onClick={() => changeType('income')} className={`rounded-xl px-3 py-2.5 text-sm font-semibold ${type === 'income' ? 'bg-[#6FAF91] text-white shadow-card' : 'text-muted'}`}>Entrada</button>
+          <button type="button" onClick={() => changeType('expense')} className={`rounded-xl px-3 py-2.5 text-sm font-semibold ${type === 'expense' ? 'bg-[#D66F74] text-white shadow-card' : 'text-muted'}`}>Saída</button>
         </div>
         <label className="block text-xs font-semibold text-muted">Descrição<input className="field mt-2" value={description} maxLength={180} onChange={(event) => setDescription(event.target.value)} placeholder={type === 'income' ? 'Ex.: Salário' : 'Ex.: Farmácia'} required /></label>
         <div className="grid grid-cols-2 gap-3">
@@ -70,7 +70,7 @@ export function PersonalTransactionModal({ open, onClose, defaultMonth, defaultT
           <label className="block text-xs font-semibold text-muted">Data<input type="date" className="field mt-2" value={occurredOn} onChange={(event) => setOccurredOn(event.target.value)} required /></label>
           <label className="block text-xs font-semibold text-muted">Mês de vigência<input type="month" className="field mt-2" value={competenceMonth} onChange={(event) => setCompetenceMonth(event.target.value)} required /></label>
         </div>
-        <label className="block text-xs font-semibold text-muted">Observação<textarea className="mt-2 min-h-24 w-full resize-none rounded-2xl border border-line bg-white px-4 py-3 text-sm text-ink outline-none focus:border-petrol focus:ring-2 focus:ring-sage" value={notes} maxLength={2000} onChange={(event) => setNotes(event.target.value)} placeholder="Opcional" /></label>
+        <label className="block text-xs font-semibold text-muted">Observação<textarea className="mt-2 min-h-24 w-full resize-none rounded-2xl border border-line bg-surface px-4 py-3 text-sm text-ink outline-none focus:border-petrol focus:ring-2 focus:ring-sage" value={notes} maxLength={2000} onChange={(event) => setNotes(event.target.value)} placeholder="Opcional" /></label>
         {error && <p className="rounded-2xl bg-red-50 px-4 py-3 text-xs leading-5 text-danger">{error}</p>}
         <div className="grid grid-cols-2 gap-2"><Button variant="secondary" onClick={onClose} disabled={busy}>Cancelar</Button><Button type="submit" disabled={busy || !description.trim() || Number(amount.replace(',', '.')) <= 0}>{busy ? 'Salvando…' : 'Salvar'}</Button></div>
       </form>

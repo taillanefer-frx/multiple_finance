@@ -201,7 +201,7 @@ export default function DashboardPage() {
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><p className="text-sm font-semibold text-ink">Minha vida financeira</p><p className="mt-1 max-w-lg text-xs leading-5 text-muted">Visão pessoal: seus lançamentos e apenas a sua parte nos grupos privados.</p></div>
-        <div className="flex items-center gap-2">{!configured && <DemoBadge />}<label className="relative flex h-10 items-center gap-2 rounded-2xl border border-line bg-white px-3 text-xs font-semibold text-ink shadow-card"><CalendarDays size={15} className="text-petrol" /><span className="sr-only">Mês de vigência</span><input type="month" value={monthKey} onChange={(event) => setMonthKey(event.target.value)} className="max-w-[8.8rem] bg-transparent outline-none" /></label></div>
+        <div className="flex items-center gap-2">{!configured && <DemoBadge />}<label className="relative flex h-10 items-center gap-2 rounded-2xl border border-line bg-surface px-3 text-xs font-semibold text-ink shadow-card"><CalendarDays size={15} className="text-petrol" /><span className="sr-only">Mês de vigência</span><input type="month" value={monthKey} onChange={(event) => setMonthKey(event.target.value)} className="max-w-[8.8rem] bg-transparent outline-none" /></label></div>
       </div>
 
       <section className="rounded-3xl bg-petrol p-5 text-white shadow-lift sm:p-6">

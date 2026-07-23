@@ -48,7 +48,7 @@ export function PersonalFinanceDetailSheet({ open, onClose, monthLabel, items, s
   return (
     <BottomSheet open={open} onClose={onClose} title={`Movimentações de ${monthLabel}`} description="Seus lançamentos pessoais e sua participação nas despesas compartilhadas.">
       <div className="grid grid-cols-3 gap-1 rounded-2xl bg-canvas p-1">
-        {tabs.map((tab) => <button key={tab.key} type="button" onClick={() => chooseView(tab.key)} className={cn('rounded-xl px-2 py-2.5 text-[11px] font-semibold transition sm:text-xs', view === tab.key ? 'bg-white text-petrol shadow-card' : 'text-muted')}>{tab.label}</button>)}
+        {tabs.map((tab) => <button key={tab.key} type="button" onClick={() => chooseView(tab.key)} className={cn('rounded-xl px-2 py-2.5 text-[11px] font-semibold transition sm:text-xs', view === tab.key ? 'bg-surface text-petrol shadow-card' : 'text-muted')}>{tab.label}</button>)}
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
@@ -57,7 +57,7 @@ export function PersonalFinanceDetailSheet({ open, onClose, monthLabel, items, s
       </div>
 
       <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-        <button type="button" onClick={() => setCategory('all')} className={cn('shrink-0 rounded-full border px-3 py-2 text-xs font-semibold', category === 'all' ? 'border-petrol bg-sage text-petrol' : 'border-line bg-white text-muted')}>Todas</button>
+        <button type="button" onClick={() => setCategory('all')} className={cn('shrink-0 rounded-full border px-3 py-2 text-xs font-semibold', category === 'all' ? 'border-petrol bg-sage text-petrol' : 'border-line bg-surface text-muted')}>Todas</button>
         {categories.map((item) => <button key={item.key} type="button" onClick={() => setCategory(item.key)} className="shrink-0 rounded-full border px-3 py-2 text-xs font-semibold" style={{ borderColor: item.color, color: item.color, backgroundColor: category === item.key ? `${item.color}18` : 'white' }}>{item.label}</button>)}
       </div>
 
@@ -66,7 +66,7 @@ export function PersonalFinanceDetailSheet({ open, onClose, monthLabel, items, s
           const income = item.type === 'income'
           const definition = categoryDefinition(item.category, item.type)
           return (
-            <button key={item.id} type="button" onClick={() => onSelect(item)} className="flex w-full items-center gap-3 rounded-2xl border border-line bg-white p-3.5 text-left transition hover:bg-canvas">
+            <button key={item.id} type="button" onClick={() => onSelect(item)} className="flex w-full items-center gap-3 rounded-2xl border border-line bg-surface p-3.5 text-left transition hover:bg-canvas">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl" style={{ color: definition.color, backgroundColor: `${definition.color}16` }}>{income ? <ArrowDownLeft size={18} /> : <ArrowUpRight size={18} />}</span>
               <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-ink">{item.description}</span><span className="mt-1 block truncate text-[11px] text-muted">{definition.label} · {shortDate.format(new Date(`${item.occurredOn}T12:00:00`))}{item.groupName ? ` · ${item.groupName}` : ''}</span></span>
               <span className="text-right"><span className={cn('block text-sm font-semibold', income ? 'text-positive' : 'text-danger')}>{income ? '+' : '−'} {currency.format(item.amount)}</span><span className="mt-1 flex items-center justify-end text-[10px] text-muted">{item.editable ? 'Editar' : 'Detalhes'} <ChevronRight size={12} /></span></span>

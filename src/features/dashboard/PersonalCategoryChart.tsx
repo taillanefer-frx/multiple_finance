@@ -37,7 +37,7 @@ export function PersonalCategoryChart({ categories, total }: PersonalCategoryCha
         role="img"
         aria-label={`Despesas por categoria: ${currency.format(total)}`}
       >
-        <div className="absolute inset-[22px] grid place-items-center rounded-full bg-white text-center shadow-card">
+        <div className="absolute inset-[22px] grid place-items-center rounded-full bg-surface text-center shadow-card">
           <div><p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">Total</p><p className="mt-1 text-sm font-semibold text-ink">{currency.format(total)}</p></div>
         </div>
       </div>
