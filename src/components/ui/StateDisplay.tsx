@@ -31,7 +31,7 @@ interface EmptyStateProps {
 
 export function EmptyState({ title, description, actionLabel, onAction, icon: Icon = Inbox }: EmptyStateProps) {
   return (
-    <div className="rounded-3xl border border-dashed border-line bg-white/55 px-6 py-12 text-center">
+    <div className="rounded-3xl border border-dashed border-line bg-surface/55 px-6 py-12 text-center">
       <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-sage text-petrol"><Icon size={22} /></span>
       <h3 className="mt-4 font-semibold text-ink">{title}</h3>
       <p className="mx-auto mt-2 max-w-xs text-sm leading-6 text-muted">{description}</p>
@@ -53,7 +53,7 @@ export function ErrorState({
 }: ErrorStateProps) {
   return (
     <div className="rounded-3xl border border-red-100 bg-red-50/70 px-6 py-10 text-center">
-      <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-white text-danger"><AlertCircle size={22} /></span>
+      <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-surface text-danger"><AlertCircle size={22} /></span>
       <h3 className="mt-4 font-semibold text-ink">{title}</h3>
       <p className="mx-auto mt-2 max-w-xs text-sm leading-6 text-muted">{description}</p>
       {onRetry && <Button className="mt-5" variant="secondary" onClick={onRetry}>Tentar novamente</Button>}

@@ -31,7 +31,7 @@ export function Modal({ open, onClose, title, description, children }: ModalProp
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className="relative w-full max-w-md rounded-3xl border border-white/70 bg-white p-6 shadow-lift"
+        className="relative w-full max-w-md rounded-3xl border border-line bg-surface p-6 shadow-lift"
       >
         <button
           onClick={onClose}

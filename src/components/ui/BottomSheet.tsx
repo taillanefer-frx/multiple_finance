@@ -31,7 +31,7 @@ export function BottomSheet({ open, onClose, title, description, children }: Bot
         role="dialog"
         aria-modal="true"
         aria-labelledby="sheet-title"
-        className="safe-bottom relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-[2rem] border border-line bg-white px-5 pb-5 pt-3 shadow-lift"
+        className="safe-bottom relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-[2rem] border border-line bg-surface px-5 pb-5 pt-3 shadow-lift"
       >
         <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-line" />
         <button

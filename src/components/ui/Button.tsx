@@ -10,7 +10,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants: Record<ButtonVariant, string> = {
   primary: 'bg-petrol text-white shadow-card hover:bg-petrol-dark disabled:bg-petrol/45',
-  secondary: 'border border-line bg-white text-ink hover:bg-canvas',
+  secondary: 'border border-line bg-surface text-ink hover:bg-canvas',
   ghost: 'bg-transparent text-petrol hover:bg-sage',
   danger: 'bg-red-50 text-danger hover:bg-red-100',
 }
