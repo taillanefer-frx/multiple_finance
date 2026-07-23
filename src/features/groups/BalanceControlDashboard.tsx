@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, ArrowDownLeft, ArrowLeft, ArrowUpRight, CalendarDays, ChevronRight, CircleDollarSign, CreditCard, History, Landmark, ListChecks, PackageOpen, ReceiptText, Settings2, SlidersHorizontal, UsersRound, WalletCards } from 'lucide-react'
+import { AlertTriangle, ArrowDownLeft, ArrowLeft, ArrowUpRight, CalendarDays, ChevronRight, CircleDollarSign, CreditCard, History, Landmark, ListChecks, PackageOpen, ReceiptText, Settings2, SlidersHorizontal, UserPlus, UsersRound, WalletCards } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { CollapsibleSection } from '../../components/ui/CollapsibleSection'
@@ -11,6 +11,7 @@ import { UserAvatar } from '../../components/ui/UserAvatar'
 import { currency } from '../../lib/utils/format'
 import { BalanceDetailSheet, type BalanceDetailTarget } from './BalanceDetailSheet'
 import { GroupAdminPanel } from './GroupAdminPanel'
+import { InviteParticipantModal } from './InviteParticipantModal'
 import { setMyStartingBalance } from './groupService'
 import type { BalanceMovementSummary, GroupDetails, GroupExpenseSummary } from './types'
 
@@ -36,6 +37,7 @@ export function BalanceControlDashboard({ group, userId, configured, onMonthChan
   const [balanceModalOpen, setBalanceModalOpen] = useState(false)
   const [monthModalOpen, setMonthModalOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
+  const [inviteOpen, setInviteOpen] = useState(false)
   const [amount, setAmount] = useState(balance?.startingBalance ? String(balance.startingBalance) : '')
   const [notes, setNotes] = useState(balance?.notes ?? '')
   const [saving, setSaving] = useState(false)
@@ -100,10 +102,10 @@ export function BalanceControlDashboard({ group, userId, configured, onMonthChan
   return (
     <div className="space-y-5 pb-4">
       <header className="flex items-center justify-between gap-3">
-        <Link to="/app/grupos" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-petrol shadow-card" aria-label="Voltar aos grupos"><ArrowLeft size={18} /></Link>
+        <Link to="/app/grupos" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface text-petrol shadow-card" aria-label="Voltar aos grupos"><ArrowLeft size={18} /></Link>
         <div className="min-w-0 flex-1"><p className="truncate text-lg font-semibold tracking-tight text-ink">{group.name}</p><button className="mt-0.5 inline-flex items-center gap-1.5 text-xs font-medium capitalize text-muted" onClick={() => setMonthModalOpen(true)}>{months[group.selectedMonth - 1]} de {group.selectedYear}<CalendarDays size={14} /></button></div>
         {!configured && <DemoBadge />}
-        {group.currentUserRole === 'admin' && <button type="button" onClick={() => setAdminOpen((value) => !value)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-muted shadow-card" aria-label="Configurações do grupo"><Settings2 size={18} /></button>}
+        {group.currentUserRole === 'admin' && <button type="button" onClick={() => setAdminOpen((value) => !value)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface text-muted shadow-card" aria-label="Configurações do grupo"><Settings2 size={18} /></button>}
       </header>
 
       {adminOpen && <GroupAdminPanel group={group} userId={userId} showMembers={false} onRefresh={onRefresh} onArchived={() => navigate('/app/grupos', { replace: true })} />}
@@ -118,7 +120,7 @@ export function BalanceControlDashboard({ group, userId, configured, onMonthChan
         </section>
       )}
 
-      <Surface className="overflow-hidden"><div className="flex items-center justify-between border-b border-line p-5"><div><p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted">Saldo dos participantes</p><h3 className="mt-1 font-semibold text-ink">Visão do grupo</h3></div><UsersRound size={19} className="text-muted" /></div><div className="divide-y divide-line">{balance.participants.map((participant) => <div key={participant.userId} className="flex items-center gap-3 p-4 sm:px-5"><UserAvatar displayName={participant.displayName} avatarPath={participant.avatarUrl} className="h-10 w-10 text-xs" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-ink">{participant.isCurrentUser ? 'Eu' : participant.displayName}</p><p className="mt-0.5 text-xs text-muted">{participant.configured ? 'Saldo atualizado' : 'Ainda não definiu o saldo'}</p></div><p className="text-sm font-semibold text-ink">{participant.configured ? currency.format(participant.currentBalance) : '—'}</p></div>)}</div></Surface>
+      <Surface className="overflow-hidden"><div className="flex items-center justify-between gap-3 border-b border-line p-5"><div><p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted">Saldo dos participantes</p><h3 className="mt-1 font-semibold text-ink">Visão do grupo</h3></div>{group.currentUserRole === 'admin' ? <button type="button" onClick={() => setInviteOpen(true)} className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-sage px-3 text-xs font-semibold text-petrol"><UserPlus size={15} /> + Participante</button> : <UsersRound size={19} className="text-muted" />}</div><div className="divide-y divide-line">{balance.participants.map((participant) => <div key={participant.userId} className="flex items-center gap-3 p-4 sm:px-5"><UserAvatar displayName={participant.displayName} avatarPath={participant.avatarUrl} className="h-10 w-10 text-xs" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-ink">{participant.isCurrentUser ? 'Eu' : participant.displayName}</p><p className="mt-0.5 text-xs text-muted">{participant.configured ? 'Saldo atualizado' : 'Ainda não definiu o saldo'}</p></div><p className="text-sm font-semibold text-ink">{participant.configured ? currency.format(participant.currentBalance) : '—'}</p></div>)}</div></Surface>
 
       {balance.configured && noMovements && <EmptyState icon={PackageOpen} title="Nenhuma entrada ou despesa registrada neste mês." description="Seu saldo inicial já está definido. Novas movimentações aparecerão aqui em tempo real." />}
 
@@ -147,7 +149,8 @@ export function BalanceControlDashboard({ group, userId, configured, onMonthChan
 
       <Modal open={balanceModalOpen} onClose={() => !saving && setBalanceModalOpen(false)} title={balance.configured ? 'Ajustar saldo inicial' : 'Definir saldo'} description={`Referência: ${months[group.selectedMonth - 1]} de ${group.selectedYear}. Somente o seu saldo será alterado.`}><div className="space-y-4"><label className="block text-xs font-semibold text-ink">Valor inicial<input autoFocus inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0,00" className="mt-2 h-12 w-full rounded-2xl border border-line px-4 text-sm" /></label><label className="block text-xs font-semibold text-ink">Observação opcional<textarea value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={1000} rows={3} className="mt-2 w-full resize-none rounded-2xl border border-line p-4 text-sm" placeholder="Ex.: valor disponível após contas pessoais" /></label><div className="rounded-2xl bg-canvas p-4 text-xs text-muted"><span className="font-semibold text-ink">Mês de referência</span><p className="mt-1 capitalize">{months[group.selectedMonth - 1]} de {group.selectedYear}</p></div>{saveError && <p className="text-xs text-danger">{saveError}</p>}<Button fullWidth disabled={saving || !amount.trim() || !configured} onClick={saveBalance}>{saving ? 'Salvando…' : 'Salvar saldo inicial'}</Button></div></Modal>
       <Modal open={monthModalOpen} onClose={() => setMonthModalOpen(false)} title="Trocar mês" description="Consulte outro período sem alterar os demais dados."><div className="grid grid-cols-2 gap-2">{monthChoices.map((period) => <Button key={`${period.year}-${period.month}`} variant={period.month === group.selectedMonth && period.year === group.selectedYear ? 'primary' : 'secondary'} onClick={() => { onMonthChange(period); setMonthModalOpen(false) }}><span className="capitalize">{months[period.month - 1].slice(0, 3)}</span> {period.year}</Button>)}</div></Modal>
-      <BalanceDetailSheet target={detail} configured={configured} onClose={() => setDetail(null)} />
+      <BalanceDetailSheet target={detail} configured={configured} onRefresh={onRefresh} onClose={() => setDetail(null)} />
+      <InviteParticipantModal open={inviteOpen} groupId={group.id} userId={userId} onClose={() => setInviteOpen(false)} />
     </div>
   )
 }

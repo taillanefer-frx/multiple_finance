@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ArrowLeft, CalendarDays, CheckCircle2, ChevronRight, Clock3, FileImage, History, ListChecks, PackageOpen, ReceiptText, Settings2, ShoppingBasket, UsersRound, WalletCards } from 'lucide-react'
+import { ArrowLeft, CalendarDays, CheckCircle2, ChevronRight, Clock3, FileImage, History, ListChecks, PackageOpen, ReceiptText, Settings2, ShoppingBasket, UserPlus, UsersRound, WalletCards } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { CollapsibleSection } from '../../components/ui/CollapsibleSection'
@@ -11,6 +11,7 @@ import { UserAvatar } from '../../components/ui/UserAvatar'
 import { currency } from '../../lib/utils/format'
 import { ExpenseDetailSheet } from './ExpenseDetailSheet'
 import { GroupAdminPanel } from './GroupAdminPanel'
+import { InviteParticipantModal } from './InviteParticipantModal'
 import { useAddFlow } from '../expenses/AddFlowContext'
 import type { GroupDetails, GroupExpenseSummary } from './types'
 
@@ -45,6 +46,7 @@ export function HouseSplitDashboard({ group, userId, configured, onMonthChange, 
   const [selectedExpense, setSelectedExpense] = useState<GroupExpenseSummary | null>(null)
   const [monthPickerOpen, setMonthPickerOpen] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
+  const [inviteOpen, setInviteOpen] = useState(false)
   const confirmed = useMemo(() => group.expenses.filter((expense) => expense.status !== 'cancelled' && expense.status !== 'review'), [group.expenses])
   const reviews = useMemo(() => group.expenses.filter((expense) => expense.status === 'review'), [group.expenses])
   const history = useMemo(() => [...group.expenses].sort((left, right) => right.purchaseDate.localeCompare(left.purchaseDate)), [group.expenses])
@@ -61,10 +63,10 @@ export function HouseSplitDashboard({ group, userId, configured, onMonthChange, 
   return (
     <div className="space-y-5 pb-4">
       <header className="flex items-center justify-between gap-3">
-        <Link to="/app/grupos" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-petrol shadow-card" aria-label="Voltar aos grupos"><ArrowLeft size={18} /></Link>
+        <Link to="/app/grupos" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface text-petrol shadow-card" aria-label="Voltar aos grupos"><ArrowLeft size={18} /></Link>
         <div className="min-w-0 flex-1"><p className="truncate text-lg font-semibold tracking-tight text-ink">{group.name}</p><button className="mt-0.5 inline-flex items-center gap-1.5 text-xs font-medium capitalize text-muted" onClick={() => setMonthPickerOpen(true)}>{monthNames[group.selectedMonth - 1]} de {group.selectedYear}<CalendarDays size={14} /></button></div>
         {!configured && <DemoBadge />}
-        {group.currentUserRole === 'admin' && <button type="button" onClick={() => setAdminOpen((value) => !value)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-muted shadow-card" aria-label="Configurações do grupo"><Settings2 size={18} /></button>}
+        {group.currentUserRole === 'admin' && <button type="button" onClick={() => setAdminOpen((value) => !value)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface text-muted shadow-card" aria-label="Configurações do grupo"><Settings2 size={18} /></button>}
       </header>
 
       <section className="rounded-3xl bg-petrol p-5 text-white shadow-lift sm:p-6">
@@ -77,6 +79,7 @@ export function HouseSplitDashboard({ group, userId, configured, onMonthChange, 
       </section>
 
       {adminOpen && <GroupAdminPanel group={group} userId={userId} showMembers={false} onRefresh={onRefresh} onArchived={() => navigate('/app/grupos', { replace: true })} />}
+      {isEmpty && group.currentUserRole === 'admin' && <Button variant="secondary" fullWidth onClick={() => setInviteOpen(true)}><UserPlus size={16} /> + Participante</Button>}
 
       {isEmpty ? <EmptyState icon={PackageOpen} title="Nenhuma despesa adicionada neste mês." description="As despesas confirmadas e a divisão entre participantes aparecerão aqui." actionLabel="Adicionar primeira despesa" onAction={openAdd} /> : (
         <>
@@ -86,7 +89,7 @@ export function HouseSplitDashboard({ group, userId, configured, onMonthChange, 
           </div>
 
           <Surface className="overflow-hidden">
-            <div className="flex items-center justify-between border-b border-line px-4 py-3.5 sm:px-5"><div><p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted">Participantes</p><h3 className="mt-0.5 text-sm font-semibold text-ink">Partes do mês</h3></div><UsersRound size={18} className="text-muted" /></div>
+            <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3.5 sm:px-5"><div><p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted">Participantes</p><h3 className="mt-0.5 text-sm font-semibold text-ink">Partes do mês</h3></div>{group.currentUserRole === 'admin' ? <button type="button" onClick={() => setInviteOpen(true)} className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-sage px-3 text-xs font-semibold text-petrol"><UserPlus size={15} /> + Participante</button> : <UsersRound size={18} className="text-muted" />}</div>
             <div className="divide-y divide-line">{group.members.map((member) => <div key={member.membershipId} className="flex items-center gap-3 px-4 py-3 sm:px-5"><UserAvatar displayName={member.displayName} avatarPath={member.avatarUrl} className="h-9 w-9 text-[11px]" /><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-ink">{member.isCurrentUser ? 'Eu' : member.displayName}</p><p className="mt-0.5 text-[11px] text-muted">{member.pendingValue > 0 ? `${currency.format(member.pendingValue)} pendente` : member.value > 0 ? 'Pago' : 'Sem participação'}</p></div><p className="text-sm font-semibold text-ink">{currency.format(member.value)}</p></div>)}</div>
           </Surface>
 
@@ -101,7 +104,7 @@ export function HouseSplitDashboard({ group, userId, configured, onMonthChange, 
             <div className="mt-4 border-t border-line pt-4"><div className="flex h-2 overflow-hidden rounded-full bg-canvas">{group.categories.map((category, index) => <span key={category.key} className={categoryChartColors[index % categoryChartColors.length]} style={{ width: `${group.monthTotal ? category.amount / group.monthTotal * 100 : 0}%` }} title={`${category.label}: ${currency.format(category.amount)}`} />)}</div><p className="mt-2 text-[10px] text-muted">Distribuição compacta das categorias confirmadas</p></div>
           </Surface>
 
-          {reviews.length > 0 && <section className="rounded-3xl border border-amber/20 bg-amber/5 p-5"><div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-white text-amber"><Clock3 size={17} /></span><div><p className="text-sm font-semibold text-ink">{reviews.length} {reviews.length === 1 ? 'despesa em revisão' : 'despesas em revisão'}</p><p className="mt-1 text-xs leading-5 text-muted">{currency.format(group.reviewValue)} ainda não entra no total confirmado.</p></div></div><div className="mt-3"><ExpenseList expenses={reviews} onSelect={setSelectedExpense} /></div></section>}
+          {reviews.length > 0 && <section className="rounded-3xl border border-amber/20 bg-amber/5 p-5"><div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-surface text-amber"><Clock3 size={17} /></span><div><p className="text-sm font-semibold text-ink">{reviews.length} {reviews.length === 1 ? 'despesa em revisão' : 'despesas em revisão'}</p><p className="mt-1 text-xs leading-5 text-muted">{currency.format(group.reviewValue)} ainda não entra no total confirmado.</p></div></div><div className="mt-3"><ExpenseList expenses={reviews} onSelect={setSelectedExpense} /></div></section>}
 
           <div className="space-y-3">
             <CollapsibleSection title="Despesas fixas" description="Compromissos recorrentes do mês" icon={CheckCircle2} badge={String(confirmed.filter((item) => item.type === 'fixed').length)}><ExpenseList expenses={confirmed.filter((item) => item.type === 'fixed')} onSelect={setSelectedExpense} /></CollapsibleSection>
@@ -114,12 +117,13 @@ export function HouseSplitDashboard({ group, userId, configured, onMonthChange, 
       )}
 
       <Modal open={monthPickerOpen} onClose={() => setMonthPickerOpen(false)} title="Trocar mês" description="Consulte um período anterior sem alterar os dados."><div className="grid grid-cols-2 gap-2">{monthChoices.map((period) => <Button key={`${period.year}-${period.month}`} variant={period.month === group.selectedMonth && period.year === group.selectedYear ? 'primary' : 'secondary'} onClick={() => { onMonthChange(period); setMonthPickerOpen(false) }}><span className="capitalize">{monthNames[period.month - 1].slice(0, 3)}</span> {period.year}</Button>)}</div></Modal>
-      <ExpenseDetailSheet expense={selectedExpense} configured={configured} onClose={() => setSelectedExpense(null)} />
+      <ExpenseDetailSheet expense={selectedExpense} configured={configured} onRefresh={onRefresh} onClose={() => setSelectedExpense(null)} />
+      <InviteParticipantModal open={inviteOpen} groupId={group.id} userId={userId} onClose={() => setInviteOpen(false)} />
     </div>
   )
 }
 
 function ExpenseList({ expenses, onSelect, dueDate = false }: { expenses: GroupExpenseSummary[]; onSelect: (expense: GroupExpenseSummary) => void; dueDate?: boolean }) {
   if (expenses.length === 0) return <p className="p-5 text-sm text-muted">Nenhuma despesa nesta seção.</p>
-  return <div className="divide-y divide-line">{expenses.slice(0, 8).map((expense) => <button key={expense.id} type="button" onClick={() => onSelect(expense)} className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-canvas"><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-ink">{expense.title}</p><p className="mt-1 truncate text-xs text-muted">{dueDate ? `Vence ${formatDate(expense.dueDate)}` : formatDate(expense.purchaseDate)} · {expense.category} · {expenseStatus(expense)}</p></div><div className="text-right"><p className="text-sm font-semibold text-ink">{currency.format(expense.amount)}</p></div><ChevronRight size={16} className="shrink-0 text-muted" /></button>)}</div>
+  return <div className="divide-y divide-line">{expenses.slice(0, 8).map((expense) => <button key={expense.id} type="button" onClick={() => onSelect(expense)} className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-canvas"><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-ink">{expense.title}</p><p className="mt-1 truncate text-xs text-muted">{dueDate ? `Vence ${formatDate(expense.dueDate)}` : formatDate(expense.purchaseDate)} · {expense.category} · {expenseStatus(expense)}</p>{expense.installment && <p className="mt-1 text-[11px] font-medium text-petrol">Parcela {expense.installment.currentInstallment} de {expense.installment.totalInstallments} · {expense.installment.paidInstallments} pagas · {expense.installment.remainingInstallments} restantes</p>}</div><div className="text-right"><p className="text-sm font-semibold text-ink">{currency.format(expense.amount)}</p>{expense.reactions.length > 0 && <p className="mt-1 text-[11px] text-muted">{expense.reactions.map((reaction) => `${reaction.emoji} ${reaction.count}`).join(' ')}</p>}</div><ChevronRight size={16} className="shrink-0 text-muted" /></button>)}</div>
 }

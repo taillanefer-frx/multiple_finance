@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react'
 import { CalendarDays, CheckCircle2, FileImage, Pencil, ReceiptText, UserRound, XCircle } from 'lucide-react'
 import { BottomSheet } from '../../components/ui/BottomSheet'
 import { Button } from '../../components/ui/Button'
+import { Modal } from '../../components/ui/Modal'
 import { currency } from '../../lib/utils/format'
+import { ReactionBar } from '../reactions/ReactionBar'
+import { setTransactionReaction } from '../reactions/reactionService'
+import type { ReactionTarget } from '../reactions/types'
 import { cancelExpense, getReceiptSignedUrl, markExpensePaid, updateExpenseDetails } from './groupService'
 import type { ExpenseType, GroupExpenseSummary } from './types'
 
@@ -29,14 +33,16 @@ function dateLabel(value: string | null) {
 interface ExpenseDetailSheetProps {
   expense: GroupExpenseSummary | null
   configured: boolean
+  onRefresh: () => Promise<void>
   onClose: () => void
 }
 
-export function ExpenseDetailSheet({ expense, configured, onClose }: ExpenseDetailSheetProps) {
+export function ExpenseDetailSheet({ expense, configured, onRefresh, onClose }: ExpenseDetailSheetProps) {
   const [editing, setEditing] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null)
+  const [celebration, setCelebration] = useState<'one_remaining' | 'completed' | null>(null)
   const [form, setForm] = useState({ title: '', category: '', type: 'variable' as ExpenseType, purchaseDate: '', dueDate: '' })
 
   useEffect(() => {
@@ -69,6 +75,26 @@ export function ExpenseDetailSheet({ expense, configured, onClose }: ExpenseDeta
     }
   }
 
+  async function pay() {
+    setBusy(true)
+    setError(null)
+    try {
+      const result = await markExpensePaid(expense!.id)
+      await onRefresh()
+      if (result.milestone) setCelebration(result.milestone)
+      else onClose()
+    } catch {
+      setError('Não foi possível registrar o pagamento. Confira o período e tente novamente.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function react(target: ReactionTarget, emoji: Parameters<typeof setTransactionReaction>[1]) {
+    await setTransactionReaction(target, emoji)
+    await onRefresh()
+  }
+
   if (!expense) return null
 
   return (
@@ -78,7 +104,7 @@ export function ExpenseDetailSheet({ expense, configured, onClose }: ExpenseDeta
           <label className="block text-xs font-semibold text-ink">Título<input className="mt-2 h-12 w-full rounded-2xl border border-line px-4 text-sm" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label>
           <div className="grid grid-cols-2 gap-3">
             <label className="block text-xs font-semibold text-ink">Categoria<input className="mt-2 h-12 w-full rounded-2xl border border-line px-4 text-sm" value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} /></label>
-            <label className="block text-xs font-semibold text-ink">Tipo<select className="mt-2 h-12 w-full rounded-2xl border border-line bg-white px-3 text-sm" value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value as ExpenseType })}><option value="fixed">Fixa</option><option value="variable">Variável</option><option value="one_time">Avulsa</option><option value="installment">Parcelamento</option></select></label>
+            <label className="block text-xs font-semibold text-ink">Tipo<select className="mt-2 h-12 w-full rounded-2xl border border-line bg-surface px-3 text-sm text-ink" value={form.type} onChange={(event) => setForm({ ...form, type: event.target.value as ExpenseType })}><option value="fixed">Fixa</option><option value="variable">Variável</option><option value="one_time">Avulsa</option><option value="installment">Parcelamento</option></select></label>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <label className="block text-xs font-semibold text-ink">Compra<input type="date" className="mt-2 h-12 w-full rounded-2xl border border-line px-3 text-sm" value={form.purchaseDate} onChange={(event) => setForm({ ...form, purchaseDate: event.target.value })} /></label>
@@ -98,12 +124,15 @@ export function ExpenseDetailSheet({ expense, configured, onClose }: ExpenseDeta
             <Info icon={ReceiptText} label="Status" value={statusLabels[expense.status]} />
           </div>
           <section><p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted">Participantes</p><div className="mt-2 divide-y divide-line rounded-2xl border border-line">{expense.participants.filter((item) => item.included).length === 0 ? <p className="p-4 text-sm text-muted">Nenhuma divisão registrada.</p> : expense.participants.filter((item) => item.included).map((participant) => <div key={participant.userId} className="flex items-center justify-between gap-3 p-4 text-sm"><span className="font-medium text-ink">{participant.displayName}</span><span className="font-semibold text-ink">{currency.format(participant.shareAmount)}</span></div>)}</div></section>
+          {expense.installment && <section className="rounded-2xl bg-canvas p-4"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">Parcelamento</p><p className="mt-2 text-base font-semibold text-ink">Parcela {expense.installment.currentInstallment} de {expense.installment.totalInstallments}</p><p className="mt-1 text-sm text-muted">{expense.installment.paidInstallments} pagas · {expense.installment.remainingInstallments} restantes</p></section>}
+          <ReactionBar target={{ kind: 'expense', id: expense.id }} reactions={expense.reactions} disabled={!configured} onReact={react} />
           {expense.notes && <section className="rounded-2xl bg-canvas p-4"><p className="text-xs font-semibold text-muted">Observações</p><p className="mt-2 text-sm leading-6 text-ink">{expense.notes}</p></section>}
           <section><p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted">Nota salva</p>{expense.receipt ? receiptUrl ? <img src={receiptUrl} alt={`Nota de ${expense.title}`} className="mt-2 max-h-64 w-full rounded-2xl border border-line object-contain" /> : <div className="mt-2 flex items-center gap-3 rounded-2xl border border-line p-4 text-sm text-muted"><FileImage size={18} /> Imagem protegida indisponível no momento.</div> : <div className="mt-2 flex items-center gap-3 rounded-2xl border border-line p-4 text-sm text-muted"><FileImage size={18} /> Nenhuma foto vinculada.</div>}</section>
           {error && <p className="text-xs text-danger">{error}</p>}
-          {configured && expense.status !== 'cancelled' && <div className="grid gap-2 sm:grid-cols-3"><Button variant="secondary" onClick={() => setEditing(true)}><Pencil size={16} /> Editar</Button>{expense.status !== 'paid' && expense.status !== 'review' && <Button variant="secondary" disabled={busy} onClick={() => run(() => markExpensePaid(expense.id))}><CheckCircle2 size={16} /> Marcar paga</Button>}<Button variant="danger" disabled={busy} onClick={() => run(() => cancelExpense(expense.id))}><XCircle size={16} /> Cancelar</Button></div>}
+          {configured && expense.status !== 'cancelled' && <div className="grid gap-2 sm:grid-cols-3"><Button variant="secondary" onClick={() => setEditing(true)}><Pencil size={16} /> Editar</Button>{expense.status !== 'paid' && expense.status !== 'review' && <Button variant="secondary" disabled={busy} onClick={() => void pay()}><CheckCircle2 size={16} /> Marcar paga</Button>}<Button variant="danger" disabled={busy} onClick={() => run(() => cancelExpense(expense.id))}><XCircle size={16} /> Cancelar</Button></div>}
         </div>
       )}
+      <Modal open={Boolean(celebration)} onClose={() => { setCelebration(null); onClose() }} title={celebration === 'completed' ? 'MENOS UMA 🎉' : 'Quase lá, guerreira'} description={celebration === 'completed' ? 'A última parcela foi marcada como paga.' : 'Falta exatamente uma parcela para concluir.'}><Button fullWidth onClick={() => { setCelebration(null); onClose() }}>Continuar</Button></Modal>
     </BottomSheet>
   )
 }
