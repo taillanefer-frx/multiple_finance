@@ -8,6 +8,7 @@ import GroupsPage from '../features/groups/GroupsPage'
 import InvitePage from '../features/groups/InvitePage'
 import NotificationsPage from '../features/notifications/NotificationsPage'
 import ProfilePage from '../features/profile/ProfilePage'
+import GoalsPage from '../features/goals/GoalsPage'
 import NotFoundPage from './NotFoundPage'
 
 export function AppRoutes() {
@@ -22,6 +23,7 @@ export function AppRoutes() {
         <Route path="grupos/:groupId" element={<GroupDetailPage />} />
         <Route path="notificacoes" element={<NotificationsPage />} />
         <Route path="perfil" element={<ProfilePage />} />
+        <Route path="metas" element={<GoalsPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
