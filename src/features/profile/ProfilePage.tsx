@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
-import { Bell, Camera, Check, Info, LogOut, Palette, Pencil, ShieldCheck, Trash2 } from 'lucide-react'
+import { Bell, Camera, Check, Info, LogOut, Moon, Palette, Pencil, ShieldCheck, Sun, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { DemoBadge } from '../../components/ui/DemoBadge'
@@ -22,7 +22,7 @@ function friendlyError(error: unknown) {
 
 export default function ProfilePage() {
   const { configured, user, signOut } = useAuth()
-  const { profile, loading, error, refresh, saveDisplayName, saveTheme, saveAvatar, clearAvatar } = useProfile()
+  const { colorMode, profile, loading, error, refresh, saveDisplayName, saveTheme, saveColorMode, saveAvatar, clearAvatar } = useProfile()
   const navigate = useNavigate()
   const fileInput = useRef<HTMLInputElement>(null)
   const [nameOpen, setNameOpen] = useState(false)
@@ -168,11 +168,22 @@ export default function ProfilePage() {
       </Surface>
 
       <Surface className="p-5">
+        <div className="flex items-center gap-3">
+          <span className="grid h-10 w-10 place-items-center rounded-2xl bg-sage text-petrol">{colorMode === 'dark' ? <Moon size={18} /> : <Sun size={18} />}</span>
+          <div><h3 className="text-sm font-semibold text-ink">Aparência</h3><p className="mt-0.5 text-xs text-muted">Escolha a leitura mais confortável para este dispositivo.</p></div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl bg-canvas p-1.5">
+          <button type="button" onClick={() => saveColorMode('light')} className={cn('flex min-h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition', colorMode === 'light' ? 'bg-surface text-petrol shadow-card' : 'text-muted hover:text-ink')}><Sun size={17} /> Claro</button>
+          <button type="button" onClick={() => saveColorMode('dark')} className={cn('flex min-h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition', colorMode === 'dark' ? 'bg-surface text-petrol shadow-card' : 'text-muted hover:text-ink')}><Moon size={17} /> Escuro</button>
+        </div>
+      </Surface>
+
+      <Surface className="p-5">
         <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-2xl bg-sage text-petrol"><Palette size={18} /></span><div><h3 className="text-sm font-semibold text-ink">Cor principal</h3><p className="mt-0.5 text-xs text-muted">Uma paleta discreta, salva no seu perfil.</p></div></div>
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           {themeOptions.map((theme) => {
             const selected = profile?.themeKey === theme.key
-            return <button key={theme.key} type="button" disabled={!configured || busy !== null} onClick={() => void handleTheme(theme.key)} className={cn('flex items-center gap-3 rounded-2xl border p-3 text-left transition', selected ? 'border-petrol bg-sage' : 'border-line bg-white hover:bg-canvas')}><span className="h-9 w-9 shrink-0 rounded-full border-4 border-white shadow-card" style={{ backgroundColor: `rgb(${theme.primary})` }} /><span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-ink">{theme.label}</span><span className="mt-0.5 block text-xs text-muted">{theme.note}</span></span>{selected && <Check size={17} className="text-petrol" />}</button>
+            return <button key={theme.key} type="button" disabled={!configured || busy !== null} onClick={() => void handleTheme(theme.key)} className={cn('flex items-center gap-3 rounded-2xl border p-3 text-left transition', selected ? 'border-petrol bg-sage' : 'border-line bg-surface hover:bg-canvas')}><span className="h-9 w-9 shrink-0 rounded-full border-4 border-surface shadow-card" style={{ backgroundColor: `rgb(${colorMode === 'dark' ? theme.dark.primary : theme.primary})` }} /><span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-ink">{theme.label}</span><span className="mt-0.5 block text-xs text-muted">{theme.note}</span></span>{selected && <Check size={17} className="text-petrol" />}</button>
           })}
         </div>
       </Surface>

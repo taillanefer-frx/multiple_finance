@@ -1,16 +1,18 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useAuth } from '../auth/AuthContext'
-import { applyTheme } from './theme'
+import { applyColorMode, applyTheme, readColorMode, storeColorMode } from './theme'
 import { getMyProfile, removeMyAvatar, updateMyDisplayName, updateMyTheme, uploadMyAvatar } from './profileService'
-import type { ThemeKey, UserProfile } from './types'
+import type { ColorMode, ThemeKey, UserProfile } from './types'
 
 interface ProfileContextValue {
   profile: UserProfile | null
   loading: boolean
   error: string | null
+  colorMode: ColorMode
   refresh: () => Promise<void>
   saveDisplayName: (displayName: string) => Promise<void>
   saveTheme: (themeKey: ThemeKey) => Promise<void>
+  saveColorMode: (mode: ColorMode) => void
   saveAvatar: (file: File) => Promise<void>
   clearAvatar: () => Promise<void>
 }
@@ -32,6 +34,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(configured)
   const [error, setError] = useState<string | null>(null)
+  const [colorMode, setColorMode] = useState<ColorMode>(() => readColorMode())
 
   const refresh = useCallback(async () => {
     const currentRequest = ++requestId.current
@@ -68,8 +71,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [refresh])
 
   useEffect(() => {
-    applyTheme(profile?.themeKey ?? 'sage')
-  }, [profile?.themeKey])
+    const nextMode = readColorMode(userId)
+    setColorMode(nextMode)
+    applyColorMode(nextMode, profile?.themeKey ?? 'sage')
+  }, [profile?.themeKey, userId])
 
   const requireProfile = useCallback(() => {
     if (!userId || !profile) throw new Error('Aguarde o perfil terminar de carregar.')
@@ -80,6 +85,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     profile,
     loading,
     error,
+    colorMode,
     refresh,
     async saveDisplayName(displayName) {
       const current = requireProfile()
@@ -89,14 +95,19 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const current = requireProfile()
       const previous = current.profile
       setProfile({ ...previous, themeKey })
-      applyTheme(themeKey)
+      applyTheme(themeKey, colorMode)
       try {
         setProfile(await updateMyTheme(current.userId, themeKey))
       } catch (caughtError) {
         setProfile(previous)
-        applyTheme(previous.themeKey)
+        applyTheme(previous.themeKey, colorMode)
         throw new Error(profileMessage(caughtError))
       }
+    },
+    saveColorMode(mode) {
+      setColorMode(mode)
+      storeColorMode(mode, userId)
+      applyColorMode(mode, profile?.themeKey ?? 'sage')
     },
     async saveAvatar(file) {
       const current = requireProfile()
@@ -106,7 +117,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       const current = requireProfile()
       setProfile(await removeMyAvatar(current.userId, current.profile.avatarPath))
     },
-  }), [error, loading, profile, refresh, requireProfile])
+  }), [colorMode, error, loading, profile, refresh, requireProfile, userId])
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>
 }
