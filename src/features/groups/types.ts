@@ -100,6 +100,7 @@ export interface BalanceInstallmentSummary {
 export interface BalanceParticipantSummary {
   userId: string
   displayName: string
+  avatarUrl: string | null
   isCurrentUser: boolean
   configured: boolean
   startingBalance: number

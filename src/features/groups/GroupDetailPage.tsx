@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ShieldOff } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/StateDisplay'
+import { dataErrorMessage } from '../../lib/supabase/errors'
 import { useAuth } from '../auth/AuthContext'
 import { useAddFlow } from '../expenses/AddFlowContext'
 import { BalanceControlDashboard } from './BalanceControlDashboard'
@@ -59,8 +60,8 @@ function demoDetails(groupId: string, period: { month: number; year: number }): 
           { id: 'demo-installment', title: 'Notebook', totalAmount: 3600, installmentAmount: 300, totalInstallments: 12, currentInstallment: 4, remainingInstallments: 8, dueDay: 20, nextDueDate: '2026-07-20', firstDueDate: '2026-04-20', cardLabel: 'Cartão principal', notes: null, paidByUserId: demoUser, responsibleName: 'Thaiane Zeni', active: true },
         ],
         participants: [
-          { userId: demoUser, displayName: 'Thaiane Zeni', isCurrentUser: true, configured: true, startingBalance: 1200, currentBalance: 320 },
-          { userId: 'demo-two', displayName: 'Ana', isCurrentUser: false, configured: true, startingBalance: 900, currentBalance: 340 },
+          { userId: demoUser, displayName: 'Thaiane Zeni', avatarUrl: null, isCurrentUser: true, configured: true, startingBalance: 1200, currentBalance: 320 },
+          { userId: 'demo-two', displayName: 'Ana', avatarUrl: null, isCurrentUser: false, configured: true, startingBalance: 900, currentBalance: 340 },
         ],
         categories: [{ key: 'card', label: 'Cartão', amount: 300, count: 1 }, { key: 'other', label: 'Outros', amount: 1280, count: 1 }],
         upcomingExpenses: [],
@@ -120,48 +121,74 @@ function demoDetails(groupId: string, period: { month: number; year: number }): 
 
 export default function GroupDetailPage() {
   const { groupId } = useParams()
-  const { configured, user } = useAuth()
+  const { configured, loading: authLoading, user } = useAuth()
+  const userId = user?.id ?? null
+  const requestId = useRef(0)
+  const groupRef = useRef<GroupDetails | null>(null)
   const navigate = useNavigate()
   const { setActiveGroup } = useAddFlow()
   const [period, setPeriod] = useState(currentPeriod)
   const [group, setGroup] = useState<GroupDetails | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<'generic' | 'permission' | null>(null)
+  const [error, setError] = useState<{ kind: 'generic' | 'permission'; message: string } | null>(null)
+  const [refreshWarning, setRefreshWarning] = useState<string | null>(null)
 
   const loadGroup = useCallback(async (silent = false) => {
+    const currentRequest = ++requestId.current
     if (!groupId) {
-      setError('generic')
+      setError({ kind: 'generic', message: 'O endereço deste grupo está incompleto.' })
       setLoading(false)
       return
     }
     if (!silent) setLoading(true)
     setError(null)
+    if (!silent) setRefreshWarning(null)
+    if (authLoading) return
 
     if (!configured) {
       setGroup(demoDetails(groupId, period))
       setLoading(false)
       return
     }
-    if (!user) return
+    if (!userId) {
+      setGroup(null)
+      setLoading(false)
+      return
+    }
 
     try {
-      setGroup(await getGroupDetails(groupId, user.id, period))
+      const nextGroup = await getGroupDetails(groupId, userId, period)
+      if (currentRequest !== requestId.current) return
+      setGroup(nextGroup)
+      setRefreshWarning(null)
     } catch (caughtError) {
-      setGroup(null)
-      setError(caughtError instanceof GroupAccessError ? 'permission' : 'generic')
+      if (currentRequest !== requestId.current) return
+      if (silent && groupRef.current) {
+        setRefreshWarning('A atualização em tempo real não foi concluída. Os últimos dados carregados continuam na tela.')
+      } else {
+        setGroup(null)
+        setError(caughtError instanceof GroupAccessError
+          ? { kind: 'permission', message: 'Somente membros ativos podem visualizar os dados privados deste grupo.' }
+          : { kind: 'generic', message: dataErrorMessage(caughtError, 'Não foi possível consultar os dados deste grupo agora.') })
+      }
     } finally {
-      setLoading(false)
+      if (currentRequest === requestId.current) setLoading(false)
     }
-  }, [configured, groupId, period, user])
+  }, [authLoading, configured, groupId, period, userId])
+
+  useEffect(() => {
+    groupRef.current = group
+  }, [group])
 
   useEffect(() => {
     void loadGroup()
+    return () => { requestId.current += 1 }
   }, [loadGroup])
 
   useEffect(() => {
-    if (!configured || !groupId || !user) return
+    if (!configured || authLoading || !groupId || !userId) return
     return subscribeToGroup(groupId, () => { void loadGroup(true) })
-  }, [configured, groupId, loadGroup, user])
+  }, [authLoading, configured, groupId, loadGroup, userId])
 
   useEffect(() => {
     setActiveGroup(group)
@@ -169,12 +196,17 @@ export default function GroupDetailPage() {
   }, [group, setActiveGroup])
 
   if (loading) return <LoadingState label="Organizando os dados do mês…" />
-  if (error === 'permission') return <EmptyState icon={ShieldOff} title="Você não tem acesso a este grupo" description="Somente membros ativos podem visualizar os dados privados deste grupo." actionLabel="Voltar aos grupos" onAction={() => navigate('/app/grupos', { replace: true })} />
-  if (error || !group) return <ErrorState title="Não foi possível abrir o grupo" description="Houve um problema ao carregar os dados privados. Tente novamente." onRetry={() => void loadGroup()} />
+  if (error?.kind === 'permission') return <EmptyState icon={ShieldOff} title="Você não tem acesso a este grupo" description={error.message} actionLabel="Voltar aos grupos" onAction={() => navigate('/app/grupos', { replace: true })} />
+  if (error || !group) return <ErrorState title="Não foi possível abrir o grupo" description={error?.message ?? 'O grupo não retornou dados.'} onRetry={() => void loadGroup()} />
 
   if (group.type === 'house_split') {
-    return <HouseSplitDashboard group={group} userId={user?.id || 'demo-user'} configured={configured} onMonthChange={setPeriod} onRefresh={() => loadGroup(true)} />
+    return <><RefreshWarning message={refreshWarning} /><HouseSplitDashboard group={group} userId={userId || 'demo-user'} configured={configured} onMonthChange={setPeriod} onRefresh={() => loadGroup(true)} /></>
   }
 
-  return <BalanceControlDashboard group={group} userId={user?.id || 'demo-user'} configured={configured} onMonthChange={setPeriod} onRefresh={() => loadGroup(true)} />
+  return <><RefreshWarning message={refreshWarning} /><BalanceControlDashboard group={group} userId={userId || 'demo-user'} configured={configured} onMonthChange={setPeriod} onRefresh={() => loadGroup(true)} /></>
+}
+
+function RefreshWarning({ message }: { message: string | null }) {
+  if (!message) return null
+  return <p className="mb-4 rounded-2xl bg-amber/10 px-4 py-3 text-xs leading-5 text-amber">{message}</p>
 }

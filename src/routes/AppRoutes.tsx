@@ -1,16 +1,14 @@
-import { lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from '../components/layout/AppShell'
+import LoginPage from '../features/auth/LoginPage'
 import { ProtectedRoute } from '../features/auth/ProtectedRoute'
-
-const LoginPage = lazy(() => import('../features/auth/LoginPage'))
-const DashboardPage = lazy(() => import('../features/dashboard/DashboardPage'))
-const GroupsPage = lazy(() => import('../features/groups/GroupsPage'))
-const GroupDetailPage = lazy(() => import('../features/groups/GroupDetailPage'))
-const NotificationsPage = lazy(() => import('../features/notifications/NotificationsPage'))
-const ProfilePage = lazy(() => import('../features/profile/ProfilePage'))
-const InvitePage = lazy(() => import('../features/groups/InvitePage'))
-const NotFoundPage = lazy(() => import('./NotFoundPage'))
+import DashboardPage from '../features/dashboard/DashboardPage'
+import GroupDetailPage from '../features/groups/GroupDetailPage'
+import GroupsPage from '../features/groups/GroupsPage'
+import InvitePage from '../features/groups/InvitePage'
+import NotificationsPage from '../features/notifications/NotificationsPage'
+import ProfilePage from '../features/profile/ProfilePage'
+import NotFoundPage from './NotFoundPage'
 
 export function AppRoutes() {
   return (

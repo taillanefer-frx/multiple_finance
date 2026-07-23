@@ -19,14 +19,14 @@ export function CollapsibleSection({ title, description, icon: Icon, badge, defa
     <Surface className="overflow-hidden">
       <button
         type="button"
-        className="flex w-full items-center gap-3 p-5 text-left"
+        className="flex w-full items-center gap-3 px-4 py-3.5 text-left sm:px-5"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
       >
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-sage text-petrol"><Icon size={18} /></span>
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-sage text-petrol"><Icon size={17} /></span>
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-ink">{title}</span>
-          <span className="mt-0.5 block truncate text-xs text-muted">{description}</span>
+          <span className="mt-0.5 block truncate text-[11px] text-muted">{description}</span>
         </span>
         {badge && <span className="rounded-full bg-canvas px-2.5 py-1 text-xs font-semibold text-muted">{badge}</span>}
         <ChevronDown size={18} className={cn('shrink-0 text-muted transition-transform', open && 'rotate-180')} />

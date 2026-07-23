@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabase/client'
+import { DataRequestError } from '../../lib/supabase/errors'
 import type { BalanceControlSummary, BalanceInstallmentSummary, BalanceMovementSummary, ExpenseCategorySummary, ExpenseParticipantSummary, GroupDetails, GroupExpenseSummary, GroupMemberSummary, GroupSummary, GroupType, InvitePreview } from './types'
 
 interface MembershipRow {
@@ -29,8 +30,8 @@ function currentMonth() {
   return { month: now.getMonth() + 1, year: now.getFullYear() }
 }
 
-function throwIfError(error: { message: string } | null) {
-  if (error) throw new Error(error.message)
+function throwIfError(error: { message: string; code?: string } | null) {
+  if (error) throw new DataRequestError(error.message, error.code)
 }
 
 export class GroupAccessError extends Error {
@@ -237,7 +238,8 @@ export async function getGroupDetails(
     db.from('groups').select('id, name, type, owner_id, archived_at').eq('id', groupId).is('archived_at', null).single(),
     db.from('group_members').select('id, user_id, role, profiles(display_name, avatar_url)').eq('group_id', groupId).eq('status', 'active'),
   ])
-  if (groupError || !group) throw new GroupAccessError()
+  if (groupError && groupError.code !== 'PGRST116') throwIfError(groupError)
+  if (!group) throw new GroupAccessError()
   throwIfError(membersError)
 
   const members = (membersData ?? []) as unknown as MemberRow[]
@@ -302,6 +304,7 @@ export async function getGroupDetails(
         participants: emptyMembers.map((member) => ({
           userId: member.userId,
           displayName: member.displayName,
+          avatarUrl: member.avatarUrl,
           isCurrentUser: member.isCurrentUser,
           configured: false,
           startingBalance: 0,
@@ -527,6 +530,7 @@ export async function getGroupDetails(
       participants: detailMembers.map((member) => ({
         userId: member.userId,
         displayName: member.displayName,
+        avatarUrl: member.avatarUrl,
         isCurrentUser: member.isCurrentUser,
         configured: accountByUser.has(member.userId),
         startingBalance: accountByUser.has(member.userId) ? Number(accountByUser.get(member.userId)?.starting_balance) : 0,
