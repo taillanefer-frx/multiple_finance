@@ -7,7 +7,7 @@ import { Surface } from '../../components/ui/Surface'
 import { dataErrorMessage } from '../../lib/supabase/errors'
 import { currency } from '../../lib/utils/format'
 import { useAuth } from '../auth/AuthContext'
-import { calculateGoalProgress, sortGoals } from './goalCalculations'
+import { calculateGoalProgress, monthStart, sortGoals } from './goalCalculations'
 import { GoalDetailsSheet } from './GoalDetailsSheet'
 import { GoalFormModal } from './GoalFormModal'
 import { createGoal, getGoals, recordExtraGoalAmount, recordMonthlyGoalAmount, subscribeToGoals, updateGoal } from './goalService'
@@ -22,6 +22,7 @@ export default function GoalsPage() {
   const userId = user?.id ?? null
   const request = useRef(0)
   const createRequestId = useRef(crypto.randomUUID())
+  const monthlyRequestIds = useRef(new Map<string, string>())
   const [goals, setGoals] = useState<FinancialGoal[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -76,6 +77,15 @@ export default function GoalsPage() {
     setFormOpen(true)
   }
 
+  function monthlyRequestId(goalId: string) {
+    const key = `${goalId}:${monthStart()}`
+    const current = monthlyRequestIds.current.get(key)
+    if (current) return current
+    const next = crypto.randomUUID()
+    monthlyRequestIds.current.set(key, next)
+    return next
+  }
+
   async function save(input: GoalInput) {
     setBusy(true)
     setActionError(null)
@@ -115,7 +125,7 @@ export default function GoalsPage() {
       <div className="flex items-start justify-between gap-3"><div><h2 className="text-xl font-semibold tracking-tight text-ink">Metas</h2><p className="mt-1 text-sm text-muted">Objetivos pessoais organizados por prioridade e prazo.</p></div><Button onClick={openCreate}><Plus size={17} /> Meta</Button></div>
       {goals.length === 0 ? <EmptyState icon={Target} title="Nenhuma meta criada" description="Crie sua primeira meta e acompanhe cada valor guardado." actionLabel="Criar primeira meta" onAction={openCreate} /> : <div className="space-y-3">{goals.map((goal) => <GoalCard key={goal.id} goal={goal} onDetails={() => setSelectedId(goal.id)} />)}</div>}
       <GoalFormModal open={formOpen} goal={editing} busy={busy} error={actionError} onClose={() => setFormOpen(false)} onSubmit={save} />
-      <GoalDetailsSheet goal={selected} busy={busy} error={actionError} onClose={() => setSelectedId(null)} onEdit={(goal) => { setSelectedId(null); openEdit(goal) }} onMonthly={(goal) => contribute(() => recordMonthlyGoalAmount(goal))} onExtra={(goal, amount) => contribute(() => recordExtraGoalAmount(goal.id, amount))} />
+      <GoalDetailsSheet goal={selected} busy={busy} error={actionError} onClose={() => setSelectedId(null)} onEdit={(goal) => { setSelectedId(null); openEdit(goal) }} onMonthly={(goal) => contribute(() => recordMonthlyGoalAmount(goal, monthlyRequestId(goal.id)))} onExtra={(goal, amount) => contribute(() => recordExtraGoalAmount(goal.id, amount))} />
       <Modal open={celebration} onClose={() => setCelebration(false)} title="VOCÊ CONSEGUIU! 😭🎉" description="Sua meta foi alcançada. Todo o histórico continua guardado."><Button fullWidth onClick={() => setCelebration(false)}><CheckCircle2 size={17} /> Comemorar</Button></Modal>
     </div>
   )

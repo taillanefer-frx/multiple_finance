@@ -68,11 +68,11 @@ export async function updateGoal(goalId: string, input: GoalInput) {
   return { justCompleted: Boolean(result?.just_completed) }
 }
 
-export async function recordMonthlyGoalAmount(goal: FinancialGoal, operationId = requestId()) {
+export async function recordMonthlyGoalAmount(goal: FinancialGoal, operationId: string = requestId()) {
   return recordContribution(goal.id, goal.monthlyAmount, 'monthly', monthStart(), operationId)
 }
 
-export async function recordExtraGoalAmount(goalId: string, amount: number, operationId = requestId()) {
+export async function recordExtraGoalAmount(goalId: string, amount: number, operationId: string = requestId()) {
   return recordContribution(goalId, amount, 'extra', null, operationId)
 }
 
