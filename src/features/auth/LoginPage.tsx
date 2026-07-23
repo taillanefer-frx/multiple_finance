@@ -84,7 +84,7 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen bg-canvas px-5 py-6 sm:grid sm:place-items-center sm:px-8">
-      <div className="mx-auto grid w-full max-w-5xl overflow-hidden rounded-[2rem] border border-line bg-white shadow-card md:grid-cols-[0.9fr_1.1fr]">
+      <div className="mx-auto grid w-full max-w-5xl overflow-hidden rounded-[2rem] border border-line bg-surface shadow-card md:grid-cols-[0.9fr_1.1fr]">
         <section className="relative hidden min-h-[660px] flex-col justify-between overflow-hidden bg-petrol p-10 text-white md:flex">
           <BrandMark inverse />
           <div>
@@ -109,7 +109,7 @@ export default function LoginPage() {
 
           <div className="mt-7 grid grid-cols-2 rounded-2xl bg-canvas p-1">
             {(['login', 'signup'] as const).map((item) => (
-              <button key={item} type="button" onClick={() => changeMode(item)} className={cn('rounded-xl px-3 py-2.5 text-sm font-semibold transition', mode === item ? 'bg-white text-ink shadow-sm' : 'text-muted')}>
+              <button key={item} type="button" onClick={() => changeMode(item)} className={cn('rounded-xl px-3 py-2.5 text-sm font-semibold transition', mode === item ? 'bg-surface text-ink shadow-sm' : 'text-muted')}>
                 {item === 'login' ? 'Entrar' : 'Cadastrar'}
               </button>
             ))}
@@ -119,21 +119,21 @@ export default function LoginPage() {
             {mode === 'signup' && (
               <label className="block">
                 <span className="mb-2 block text-xs font-semibold text-ink">Nome</span>
-                <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} required maxLength={120} className="h-12 w-full rounded-2xl border border-line bg-white px-4 text-sm text-ink placeholder:text-muted/60" placeholder="Como você quer ser chamada?" autoComplete="name" />
+                <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} required maxLength={120} className="h-12 w-full rounded-2xl border border-line bg-surface px-4 text-sm text-ink placeholder:text-muted/60" placeholder="Como você quer ser chamada?" autoComplete="name" />
               </label>
             )}
             <label className="block">
               <span className="mb-2 block text-xs font-semibold text-ink">E-mail</span>
               <span className="relative block">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={18} />
-                <input value={email} onChange={(event) => setEmail(event.target.value)} required type="email" className="h-12 w-full rounded-2xl border border-line bg-white pl-11 pr-4 text-sm text-ink placeholder:text-muted/60" placeholder="voce@exemplo.com" autoComplete="email" />
+                <input value={email} onChange={(event) => setEmail(event.target.value)} required type="email" className="h-12 w-full rounded-2xl border border-line bg-surface pl-11 pr-4 text-sm text-ink placeholder:text-muted/60" placeholder="voce@exemplo.com" autoComplete="email" />
               </span>
             </label>
             <label className="block">
               <span className="mb-2 block text-xs font-semibold text-ink">Senha</span>
               <span className="relative block">
                 <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={18} />
-                <input value={password} onChange={(event) => setPassword(event.target.value)} required minLength={6} type="password" className="h-12 w-full rounded-2xl border border-line bg-white pl-11 pr-4 text-sm text-ink placeholder:text-muted/60" placeholder="••••••••" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
+                <input value={password} onChange={(event) => setPassword(event.target.value)} required minLength={6} type="password" className="h-12 w-full rounded-2xl border border-line bg-surface pl-11 pr-4 text-sm text-ink placeholder:text-muted/60" placeholder="••••••••" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
               </span>
             </label>
             {mode === 'signup' && (
@@ -141,7 +141,7 @@ export default function LoginPage() {
                 <span className="mb-2 block text-xs font-semibold text-ink">Confirmar senha</span>
                 <span className="relative block">
                   <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={18} />
-                  <input value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} required minLength={6} type="password" className="h-12 w-full rounded-2xl border border-line bg-white pl-11 pr-4 text-sm text-ink placeholder:text-muted/60" placeholder="Digite a senha novamente" autoComplete="new-password" />
+                  <input value={passwordConfirmation} onChange={(event) => setPasswordConfirmation(event.target.value)} required minLength={6} type="password" className="h-12 w-full rounded-2xl border border-line bg-surface pl-11 pr-4 text-sm text-ink placeholder:text-muted/60" placeholder="Digite a senha novamente" autoComplete="new-password" />
                 </span>
               </label>
             )}
